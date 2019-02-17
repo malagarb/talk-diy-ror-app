@@ -1,0 +1,17 @@
+FROM ruby:2.5.3
+RUN apt-get update -yqq
+RUN apt-get install -yqq --no-install-recommends nodejs
+
+# ENV RAILS_ENV development
+# ENV RAILS_ENV development
+
+
+# dev: Don't copy full src, it will be mount as a volume
+COPY src/Gemfile src/Gemfile.lock /app/
+
+# explotation: Copy full src code won't change
+# COPY src /app
+
+WORKDIR /app
+RUN bundle install
+CMD ["bin/rails", "s", "-b", "0.0.0.0"]

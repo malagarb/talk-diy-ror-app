@@ -41,3 +41,51 @@ cd  ~/repo
 id  # uid=1000(stbn) gid=1000(stbn)
 sudo chown 1000:1000 -R ./src
 ```
+
+
+
+
+## STEP 2 - Dockerfile creation, docker image build and docker container run
+
+constraint should use the same versions ruby and rails
+
+```Dockerfile
+FROM ruby:2.5.3
+RUN apt-get update -yqq
+RUN apt-get install -yqq --no-install-recommends nodejs
+
+# dev: Don't copy full src, it will be mount as a volume
+COPY src/Gemfile src/Gemfile.lock /app
+
+# explotation: Copy full src code won't change
+# COPY src /app
+
+WORKDIR /app
+RUN bundle install
+CMD ["bin/rails", "s", "-b", "0.0.0.0"]
+```
+
+let's build the image
+
+```bash
+cd ~/repo
+docker image build --tag diy_image:1.0 -f Dockerfile.dev .
+docker image ls
+#REPOSITORY     TAG    IMAGE ID            CREATED             SIZE
+#diy_image    1.0   e9211d05e5ef        1 minute ago       1.03GB
+```
+
+now launch de server
+
+```bash
+docker container run -it -p 3000:3000 --name diy_container -v `pwd`/src:/app diy_image:1.0
+```
+
+connect terminal to
+
+```bash
+docker container exec -it $container_id /bin/bash
+```
+docker container restart diy_container
+
+There an problem with version of sqlite3 rails 5.2.2 shoul use sqlite3" , '~> 1.3.6'
