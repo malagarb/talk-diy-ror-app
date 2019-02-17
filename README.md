@@ -20,3 +20,24 @@ Model | Author   | Books    | Comments
       | surname  | author_id | text
       |         | language   |
       |         | published_at  |
+
+
+## STEP 1 - creation rails project within a container
+
+
+
+```bash
+# ensure to run commands into right folder
+docker image pull ruby:2.5.3
+docker container run -it --name=ror-container-generator -v ${PWD}:/usr/src/app ruby:2.5.3 /bin/bash
+# into the container
+gem install rails
+cd /usr/src/app/src
+rails new .
+exit
+# out the container
+docker container rm ror-container-generator
+cd  ~/repo
+id  # uid=1000(stbn) gid=1000(stbn)
+sudo chown 1000:1000 -R ./src
+```

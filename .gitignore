@@ -46,4 +46,17 @@ bower.json
 
 # Ignore node_modules
 node_modules/
-
+/src/.git_invalid/HEAD
+/src/.git_invalid/config
+/src/.git_invalid/description
+/src/.git_invalid/hooks/applypatch-msg.sample
+/src/.git_invalid/hooks/commit-msg.sample
+/src/.git_invalid/hooks/post-update.sample
+/src/.git_invalid/hooks/pre-applypatch.sample
+/src/.git_invalid/hooks/pre-commit.sample
+/src/.git_invalid/hooks/pre-push.sample
+/src/.git_invalid/hooks/pre-rebase.sample
+/src/.git_invalid/hooks/pre-receive.sample
+/src/.git_invalid/hooks/prepare-commit-msg.sample
+/src/.git_invalid/hooks/update.sample
+/src/.git_invalid/info/exclude
