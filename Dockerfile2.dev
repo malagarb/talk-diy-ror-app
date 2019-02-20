@@ -1,0 +1,21 @@
+FROM ruby:2.5.3
+RUN apt-get update -yqq
+RUN apt-get install -yqq --no-install-recommends nodejs
+
+RUN groupadd -g 1000 dockeruser
+RUN useradd -u 1000 -g 1000 dockeruser
+
+# ENV RAILS_ENV development
+# ENV RAILS_ENV development
+
+# dev: Don't copy full src, it will be mount as a volume
+COPY src/Gemfile src/Gemfile.lock /app/
+
+# explotation: Copy full src code won't change
+# COPY src /app
+
+WORKDIR /app
+RUN bundle install --system
+RUN chown 1000:1000 -R /app
+USER dockeruser
+CMD ["bin/rails", "s", "-b", "0.0.0.0"]
