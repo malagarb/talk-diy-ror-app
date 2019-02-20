@@ -27,20 +27,33 @@ Model | Author   | Books    | Comments
 
 
 ```bash
+mkdir diy
+mkdir diy/src
 # ensure to run commands into right folder
 docker image pull ruby:2.5.3
 docker container run -it --name=ror-container-generator -v ${PWD}:/usr/src/app ruby:2.5.3 /bin/bash
 # into the container
-gem install rails
-cd /usr/src/app/src
+gem install rails -v 5.2.2
+cd /app
+whoami
 rails new .
 exit
+```
+
+
+```bash
 # out the container
 docker container rm ror-container-generator
 cd  ~/repo
+ls -las
 id  # uid=1000(stbn) gid=1000(stbn)
 sudo chown 1000:1000 -R ./src
 ```
+
+
+MODIFICATION Gemfile
+  gem 'sqlite3'
+  gem 'sqlite3', '~> 1.3.6'
 
 
 
@@ -55,7 +68,7 @@ RUN apt-get update -yqq
 RUN apt-get install -yqq --no-install-recommends nodejs
 
 # dev: Don't copy full src, it will be mount as a volume
-COPY src/Gemfile src/Gemfile.lock /app
+COPY src/Gemfile src/Gemfile.lock /app/
 
 # explotation: Copy full src code won't change
 # COPY src /app
@@ -69,7 +82,7 @@ let's build the image
 
 ```bash
 cd ~/repo
-docker image build --tag diy_image:1.0 -f Dockerfile1.dev .
+docker image build --tag diy_image:1.0 -f Dockerfile.1.dev .
 docker image ls
 #REPOSITORY     TAG    IMAGE ID            CREATED             SIZE
 #diy_image    1.0   e9211d05e5ef        1 minute ago       1.03GB
@@ -78,67 +91,45 @@ docker image ls
 now launch the server
 
 ```bash
-docker container run -it -p 3000:3000 --name diy_container -v `pwd`/src:/app diy_image:1.0
+docker container run -it -p 3000:3000 -v `pwd`/src:/app --name diy_container diy_image:1.0
+docker container ps -a
+ss -tunpl
 ```
-
-connect terminal to
-
-```bash
-docker container exec -it $container_id /bin/bash
-```
-docker container restart diy_container
-
-There an problem with version of sqlite3 rails 5.2.2 should use sqlite3 one specific version:
-gem 'sqlite3', '~> 1.3.6'
-
 
 visit localhost:3000 it should works
 
+connect terminal to
 
 
 ## STEP 3 develop into rails as root user
 
+I was think run a generator by I will show directly on a single file
+
 ```bash
-docker container -it -p 3000:3000 --name diy_container -v `pwd`/src:/app diy_image:1.0
-docker container exec -it diy_container /bin/bash
-# into container
-bin/rails generate model author name:string surname:string
+docker container exec -it $container_id /bin/bash
+touch README.bad.md
 ```
 
-go to editor PROBLEM
+we will have problems with generator of rails...
+
+try to edit and save this file. You cannot
+
+SOLUTION QUICK & DIRTY -
 
 ```bash
 id
-sudo chown 1000:1000 -R .
+sudo chown 1000:1000 -R ./src
 ```
-every container create a new file redo chown
+
+
+previously to run generators let's fix that, i don't want run chown thousand of times at day
+
 
 ## STEP 4 develop into as non-root user
 
-first try into container
+first when execute as root it create some files like logs, we need ownership again over these
 
-```bash
-# out container
-id
-docker container exec -it diy_container
-# into container
-groupadd -g 1000 dockerusers
-useradd -u 1000 -g 1000 dockeruser
-useradd -u 1000 -g 1000 -m dockeruser
-su - dockeruser # problem because change the context
-su dockeruser
-
-# problem root user and new user don't share the gems
-echo $PATH
-irb
-puts $LOAD_PATH
-bundle install --system
-```
-
-
-### must we rewrite our Dockerfile
-
-
+let's fix our Dockerfile
 
 
 ```dockerfile
@@ -148,9 +139,6 @@ RUN apt-get install -yqq --no-install-recommends nodejs
 
 RUN groupadd -g 1000 dockeruser
 RUN useradd -u 1000 -g 1000 dockeruser
-
-# ENV RAILS_ENV development
-# ENV RAILS_ENV development
 
 # dev: Don't copy full src, it will be mount as a volume
 COPY src/Gemfile src/Gemfile.lock /app/
@@ -167,12 +155,21 @@ CMD ["bin/rails", "s", "-b", "0.0.0.0"]
 
 
 ```bash
-docker image build --tag diy_image:1.0 -f Dockerfile2.dev .
-docker container run -it -p 3000:3000 -v `pwd`/src:/app --name diy_container diy_image:1.0
-docker container exec -it diy_container /bin/bash
+docker image build --tag diy_image:1.1 -f Dockerfile.2.dev .
+
+docker container run -it -p 3000:3000 -v `pwd`/src:/app --name diy_container2 diy_image:1.1
 ```
+visit localhost:3000
 
 back to develop again
+
+```bash
+docker container exec -it diy_container2 /bin/bash
+bin/rails generate model author name:string surname:string
+```
+
+check if we can modify
+
 
 ```bash
 bin/rails db:migrate
@@ -245,8 +242,6 @@ bin/rails routes
 ```
 
 
-
-this image that we are using is awesome bigger
 
 
 
