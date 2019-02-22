@@ -14,12 +14,12 @@ the following requirements
 
 the attributes for the models will be
 
-Model | Author   | Books    | Comments
-      | id       | id       | id
-      | name     | title    | book_id
-      | surname  | author_id | text
-      |         | language   |
-      |         | published_at  |
+Model | Author   | Books         | Comments
+      | id       | id            | id
+      | name     | title         | book_id
+      | surname  | author_id     | text
+      |          | language      |
+      |          | published_at  |
 
 
 ## STEP 1 - creation rails project within a container
@@ -27,12 +27,14 @@ Model | Author   | Books    | Comments
 
 
 ```bash
-mkdir diy
-mkdir diy/src
+sudo service docker start
+mkdir -p diy/src
+cd diy
 # ensure to run commands into right folder
 docker image pull ruby:2.5.3
-docker container run -it --name=ror-container-generator -v ${PWD}:/usr/src/app ruby:2.5.3 /bin/bash
+docker container run -it --rm --name=ror_tmp -v `pwd`/src:/app ruby:2.5.3 /bin/bash
 # into the container
+ruby --version
 gem install rails -v 5.2.2
 cd /app
 whoami
@@ -50,11 +52,12 @@ id  # uid=1000(stbn) gid=1000(stbn)
 sudo chown 1000:1000 -R ./src
 ```
 
+OPEN ATOM INTO FOLDER
+
 
 MODIFICATION Gemfile
-  gem 'sqlite3'
-  gem 'sqlite3', '~> 1.3.6'
-
+gem 'sqlite3'
+gem 'sqlite3', '~> 1.3.6'
 
 
 
@@ -63,6 +66,7 @@ MODIFICATION Gemfile
 constraint should use the same versions ruby and rails
 
 ```Dockerfile
+# dockerfile.1.dev
 FROM ruby:2.5.3
 RUN apt-get update -yqq
 RUN apt-get install -yqq --no-install-recommends nodejs
@@ -81,7 +85,7 @@ CMD ["bin/rails", "s", "-b", "0.0.0.0"]
 let's build the image
 
 ```bash
-cd ~/repo
+cd diy
 docker image build --tag diy_image:1.0 -f Dockerfile.1.dev .
 docker image ls
 #REPOSITORY     TAG    IMAGE ID            CREATED             SIZE
@@ -91,38 +95,37 @@ docker image ls
 now launch the server
 
 ```bash
-docker container run -it -p 3000:3000 -v `pwd`/src:/app --name diy_container diy_image:1.0
+docker container run -it -p 3000:3000 -v `pwd`/src:/app --name diy_container_1 diy_image:1.0
 docker container ps -a
 ss -tunpl
 ```
 
 visit localhost:3000 it should works
 
-connect terminal to
-
 
 ## STEP 3 develop into rails as root user
 
-I was think run a generator by I will show directly on a single file
+THINK ... the container still works as root 
+
 
 ```bash
 docker container exec -it $container_id /bin/bash
-touch README.bad.md
+
+bin/rails generate model author name:string surname:string
 ```
 
-we will have problems with generator of rails...
+ATOM edit and file diy/app/model/author.rb
 
-try to edit and save this file. You cannot
+FAILS: ANY GENERATOR, CREATION OF FILE, WILL BE CREATED BY ROOT NON EDITABLE ERGO YOU CAN NOT OVERWRITE
 
-SOLUTION QUICK & DIRTY -
+FIX SOLUTION QUICK & DIRTY
 
 ```bash
 id
 sudo chown 1000:1000 -R ./src
 ```
 
-
-previously to run generators let's fix that, i don't want run chown thousand of times at day
+WE DON'T WANT REPEAT THIS FOR EVER, SO LET'S FIX
 
 
 ## STEP 4 develop into as non-root user
@@ -157,25 +160,18 @@ CMD ["bin/rails", "s", "-b", "0.0.0.0"]
 ```bash
 docker image build --tag diy_image:1.1 -f Dockerfile.2.dev .
 
-docker container run -it -p 3000:3000 -v `pwd`/src:/app --name diy_container2 diy_image:1.1
+docker container run -it -p 3000:3000 -v `pwd`/src:/app --name diy_container_2 diy_image:1.1
 ```
 visit localhost:3000
 
 back to develop again
 
 ```bash
-docker container exec -it diy_container2 /bin/bash
-bin/rails generate model author name:string surname:string
-```
-
-check if we can modify
-
-
-```bash
+docker container exec -it diy_container_2 /bin/bash
 bin/rails db:migrate
 ```
 
-now we want add simple validations to model and some fixtures
+check if we can modify now we want add simple validations to model and some fixtures
 
 ... new gem => new build ... usually I use Faker but now we use fixtures
 
@@ -188,7 +184,6 @@ end
 ```
 
 
-
 at src/db/seed.rb
 ```ruby
 sandi_metz = Author.create([name: 'Sandi', surname: 'Metz'])
@@ -198,10 +193,9 @@ rob_isenberg = Author.create([name: 'Rob', surname: 'Isenberg'])
 ```
 
 generate controller for api into submodule
-
 ```bash
+bin/rails db:seed
 bin/rails generate controller api/v1/authors index show
-
 ```
 
 at: src/app/controller
@@ -227,12 +221,9 @@ namespace 'api' do
 end
 ```
 
-stop and start again the container
+VISIT localhost:3000/api/v1/authors
+VISIT localhost:3000/api/v1/authors
 
-```bash
-docker container stop diy_container
-docker container start diy_container
-```
 
 
 let's see routes.rb directly with postman
@@ -242,7 +233,16 @@ bin/rails routes
 ```
 
 
+stop and start again the container
 
+```bash
+docker container stop diy_container
+docker container start diy_container
+```
+
+
+
+ONE DOESN'T SIMPLY RUNS ONE CONTAINER... 
 
 
 
