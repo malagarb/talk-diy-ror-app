@@ -1,0 +1,682 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>DIYRoR - Dockerize it yourself Ruby on Rails</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css">
+		<!-- <link rel="stylesheet" href="css/theme/moon.css"> -->
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+		<style>
+			.text-center {text-align:center;}
+			.text-left {text-align:left;}
+			.text-right {text-align:right;}
+
+			.ml {margin-left:5rem;}
+			.ml2x {margin-left:10rem;}
+
+			h1{font-size:1.5em;}
+
+			html.img-right div.slide-background.present {
+				background-position: right;
+			}
+
+			.left {
+				left:-8.33%;
+				text-align: left;
+				float: left;
+				width:50%;
+				z-index:-10;
+			}
+
+			.right {
+				left:31.25%;
+				top: 75px;
+				float: right;
+				text-align: right;
+				z-index:-10;
+				width:50%;
+			}
+
+			.emoji {width: 40px;height: 40px;}
+			.emoji-2x {width: 80px;height: 80px;}
+
+			ul.list-style-none li {list-style: none;}
+
+		</style>
+
+		<link rel="stylesheet" href="css/customization.css">
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides" style="">
+
+
+				<section>
+					<img class="background-none border-none" src="./resources/rails-container-yellow-red.png" alt="" width="1060px" height="400px">
+					<h1>DIY R<span class="text-lowercase">o</span>R &nbsp;&nbsp;<small style="padding-top:40px;">(P<span>art</span> I)</small> </h1>
+					<h3 class="text-lowercase"><span class="text-lowercase">Dockerize it yourself Ruby on Rails</span></h3>
+					<p>a talk for malaga.rb ( 2019-02-26 )</p>
+					<p>by @stbnrivas</p>
+					<aside class="notes">
+						<ul>
+							<li>muchas gracias por asistir</li>
+							<li>mi idea para esta charla es:  dar la charla que a mi me habria gustado 
+							que me diesen cuando iba a empezar a usar docker, quiero que sea util, 
+							asi que si quereis preguntarme algo, intentare responder lo mejor posible.</li>
+							<li>
+							para romper el hielo voy a empezar preguntando yo ¿cuantos de aqui usais docker?
+							</li>
+						</ul>
+					</aside>
+				</section>
+
+				
+
+				<section>
+					<section>
+						<h5 style="line-height: 3rem; font-size: 4rem;"> What is <img src="../resources/moby_dock.png" alt="" height="80px" style="margin-top:40px;">&nbsp;?</h5>
+						<p >Let's ask to Wikipedia...</p>
+						<div class="fragment">
+							<p>Docker is a computer program that performs operating-system-level virtualization, aka "containerization". It was first released in 2013 and is developed by Docker, Inc.</p>
+							<ul>
+								<li>Docker started as internal project of dotCloud 2011-2013 by Solomon Hykes</li>
+								<li>Docker has made in Golang <img src="resources/emojis/thinking-face_1f914.png" alt="" class="emoji"></li>
+								<li>You can write once, runs everywhere with <span class="text-line-throug">Java</span> Docker </li>
+							</ul>
+						</div>
+						<aside class="notes">
+							Que es Docker? veamos que nos dice la wikipedia... <br>
+
+							Docker es un programa que nos permite utilizar la virtualización a nivel de sistema operativo. <br>
+
+							de todo esta frase hay dos ideas con las que hay que asociar docker:
+							<br>
+							virtualizacion
+							<br>
+							a nivel de sistema operativo
+						</aside>
+					</section>
+					<section>
+						<h3>virtualization</h3>
+						<h3>container-ization <br> <small>(lightweight virtualization?)</small></h3>
+						<aside class="notes">
+							podriamos decir que está la virtualizacion y la container-ization
+							<br> la "virtalizacion completa" 
+							<br> y containerization "virtualización ligera"
+						</aside>
+					</section>
+					<section>
+						<div class="left">
+							<h6 class="text-left" style="font-size:0.8em;">full virtualization</h6>
+							<ul>
+								<li>hypervisor</li>
+								<li>it has hardware support</li>
+							</ul>
+						</div>
+						<div class="right">
+							<h6 class="text-left" style="font-size:0.8em;">container-ization</h6>
+							<ul>
+								<li>less memory comsumpt</li>
+								<li>runs directly in the kernel </li>
+								<li>run without intel vt-x or AMD V </li>
+								<li>but...</li>
+								<div class="">Windows&trade; or OSx&trade; needs a VM <img src="resources/emojis/smiling-face-with-open-mouth-and-cold-sweat_1f605.png" alt="" class="emoji"></div>
+							</ul>
+						</div>
+						<aside class="notes">
+							Tenemos:
+							<br>
+							En el caso de la virtualizacion completa tenemos el kernel de sistema y un software 
+							llamado hipervisor que se encarga de darle soporte a cada uno de los sistemas virtuales 
+							cada uno con su propio kernel y que es tan pesado que tiene soporte hardware<br><br>
+
+							En el caso de la container-ization solo hay un kernel
+							y los procesos virtuales pueden entrar a ejecutarse al kernel del host 
+							bajo unas restricciones especiales
+							<br>
+						</aside>
+					</section>
+				</section>
+
+
+				<section>
+					<section>
+						<h3>Full Virtualization</h3>
+						<img src="/resources/virtualization.png" alt="" height="">
+						<p> virtualization has many implementation </p>
+						<aside class="notes">
+							la virtualizacion tiene muchas implementaciones, pero la idea común alrededor de todas 
+							es tener hipervisor que corre fuera del kernel para arrancar otros kernel
+							<br>
+							Por ejemplo pones una maquina potente y segmentas en muchas maquinas pequeñitas que comporten 
+							recursos.
+							<br> O si eres un pro montas muchas maquinas potentes y encima le pones un cluster de 
+							virtualizacion tipo Vmware vSphere
+						</aside>
+					</section>
+					<section>
+						<h3>Containerization </h3>
+						<h6>(Lightweight Virtualization?)</h6>
+						<strong>using advances features of linux kernel</strong>
+						<img src="/resources/linux-kernel.png" alt="">
+						<a href="http://www.makelinux.net/kernel_map/?src=api)">http://www.makelinux.net/kernel_map/?src=api)</a>
+						<aside class="notes">
+							Y la container-ization donde no hay hipervisor y es el kernel de linux quien
+							haciendo uso de unas features muy especificas permite correr ese proceso virtual dentro del kernel,
+							sin tener la carga añadida de un hipervisor y un kernel.
+						</aside>
+					</section>
+					<section>
+						<h3>docker needs minimal version of kernel</h3>
+						<p class="">
+							<ul class="">
+								<li>use chroot (1982), diferent root of filesystem </li>
+								<li>use namespaces (2002), process run as unique process on system PID, namespace PID</li>
+								<li>use cgroups (2007), limit the resources usables by process (cpu, memory, IO, network)</li>
+							</ul>
+						</p>
+						
+						<aside class="notes">
+							Por eso docker necesita una version minima que tenga implementada dichas caracteristicas<br>
+
+							Y esas features especiales que permiten virtualizar a nivel de kernel son, 
+							<br>
+							1- chroot que permite que cada proceso corra en un raiz de directorios diferentes
+							<br>
+							2- namespaces permite la ejecución aislada  del proceso 
+							<br>
+							3- cgroups permite limitar los recursos hardware de los que puede hacer uso el proceso
+						</aside>
+					</section>
+				</section>
+
+
+
+				<section>
+					<section>
+						<p>me.match(/(ruby|rails)+(\s|\w)+(dev)/)</p>
+						<img src="resources/emojis/neutral-face_1f610.png" alt="" class="emoji-2x">						
+						<p>Why should I use Docker?</p>
+
+						<ul class="ml2x">
+							<li class="" style="color:#AA4400">specific version of ruby (we have rvm or rbenv)</li>
+							<li class="" style="color:#AA4400">dependencies restricted environment (bundle exec, gemset)</li>
+							<li class="" style="color:#AA4400">disponsable environments</li>
+							<li style="color:#118011">encapsulate your application with single requirement <strong>docker installed</strong></li>
+							<li style="color:#118011">get multi-service application working on their workstation in an automated, repeatable, and efficient way.</li>
+							<li style="color:#118011">make easier transportation to production because use same format</li>
+						</ul>
+						<aside class="notes">
+							para mi como programador de ruby que ventajas me va a aportar el uso de docker<br>
+							
+							1- Podre usar versiones especificas de ruby simultaneamente, lo tenemos solucionado con rvm o rbenv <br><br>
+							2- Tendre un entorno aislado para las dependencias, solucionado con bundle exec y los gemset <br><br>
+							3- Contaré con entornos desechables: solucionado con los gemset, migraciones, environments de rails<br><br>
+							
+							lo nuevo que si nos va a aportar docker<br><br>
+
+							4- estandarización entre diferentes OS, encapsulando nuestra app con solo una dependencia Docker<br><br>
+							5- tambien conseguir la instalacion forma repetible de nuestra app multi servicio con versiones especificas de forma sencilla.<br><br>
+							6- ademas nos va a facilitar el transporte hacia produccion si usamos docker en produccion.<br><br>
+
+							el uso de docker mantiene las ventajas que ya teniamos en nuestro ecosistema ruby y lo extiende 
+							para otro software como bases de datos, sistemas de cache. y facilita el transporte a produccion
+						</aside>
+					</section>
+					<section>
+						<img src="resources/docker-all-the-things.png" alt="">
+						<h6>For me the more is not the better,<br> progressive is the best</h6>
+						I started with mixed solution, rbenv, database dockerized
+						<aside class="notes">
+							Ya que os he convencido, vamos a dockerizar todo. o NO<br>
+							Mi recomendacion, o lo que me ha funcionado es la adopción progresiva, 
+							Yo empezé usando contenedores con las bases de datos y usando rbenv. Y despues comence a crearme mi imagenes de docker de las app de rails<br>
+							<br>
+							
+						</aside>
+					</section>
+				</section>
+
+
+
+				<section>
+					<section>
+						<h2>Before to start</h2>
+						<h2>Learning curve?</h2>
+						<aside class="notes">
+							¿como de dificil es aprender docker?
+						</aside>
+					</section>
+					<section>
+						<img src="./resources/learning-curve.jpg" alt="">
+						<p>the problem is prerequisites</p>
+						<aside class="notes">
+							Para alguien que esta empezando con Ruby, puede desenvocar en una curva de aprendizaje aun mayor porque,
+							en este caso es mejor afrontar los problemas de uno en uno. 
+							<br>
+
+							Aprender a usar docker para desarrollo. no es tan dificil. Ademas gracias a una docker-compose que 
+							no nos dá tiempo a ver hoy se facilita mucho mucho el uso de docker.	<br><br>
+							
+							Lo que ocurre es que la curva de aprendizaje es mas larga porque puedes llegar mas lejos... <br>
+							hasta produccion y entonces necesitas aprender orquestacion de contenedores.
+
+							<br>
+						</aside>
+					</section>
+					<section>
+						<h3>Fortunately, </h3>
+						<ul>
+							<li>we know how to install ruby</li>
+							<li>bundler is our friend</li>
+							<li>we know our database favourite</li>
+							<li>we love the CLI</li>
+						</ul>
+						<aside class="notes">
+							Por suerte si ya eres un desarrollador de ruby ya conoces muchos de esos pre-requisitos <br>
+						</aside>
+					</section>
+				</section>
+
+
+
+				<section>
+					<h3>basic concepts</h3>
+					<p>
+					to learn docker, one self have to learn:
+					<ul>
+						<li>image vs container <img src="resources/tick.png" alt="" height="30px"></li> 
+						<li>image layers <img src="resources/tick.png" alt="" height="30px"></li>
+						<li>volume in docker</li>
+						<li>docker CLI <img src="resources/tick.png" alt="" height="30px"></li>
+						<li>dockerfile sintax <img src="resources/tick.png" alt="" height="30px"></li>						
+						<li>docker-compose sintax</li>
+						<li>docker-compose CLI</li>
+						<li>practise, practise ... </li>
+					</ul>
+					<br><br><br>
+					<h3>advance concepts</h3>
+					<ul>
+						<li>container orchestration</li>
+					</ul>
+					<p>
+						<h6>next talk?</h6>
+						<ul>
+							<li>
+								<a href="https://andalucia.onruby.eu/topics/diy-dockerize-it-yourself-rails-part-ii-685">DIY RoR part II</a>
+
+							</li>
+						</ul>
+					</p>
+					<aside class="notes">
+					Para aprender docker es necesario tener claros estos conceptos:<br>
+					1-que es una imagen de docker<br>
+					2-que es una contenedor de docker <br>
+					3-que es una volumen de docker <br>
+					4-la interfaz de comandos de docker <br>
+					5-la sintaxis de los docker file <br>
+					6-la sintaxis yaml de los ficheros docker-compose <br>
+					7-la interfaz de comandos de docker-compose <br>
+					
+					en esta ocasion solo nos dará tiempo a ver los 4 primeros puntos y hacer un pequeño caso de uso.
+					<br><br>
+					Pero aprovecho para meter una cuña publicitaria y decir que si quereis una secuela de esta charla, 
+					pues dadle votos en la plataforma de andalucia.onruby.eu
+					</aside>
+				</section>
+
+
+
+
+				<section>
+					<section>
+						<h3>docker image vs docker container</h3>
+						<br>
+							<ul class="list-style-none">
+								<li class="list-none">Example 1:</li>
+								<li>docker image is like a class</li>
+								<li>docker container is like an instance of class</li>
+								<br>
+								<br>
+								<li class="list-none">Example 2:</li>
+								<li>docker image is like a software without install</li>
+								<li>docker container is like an installation of this software</li>
+								<br>
+								<br>
+								<li class="list-none">Example 3:</li>
+								<li>docker image is like a blueprint</li>
+								<li>docker container is like a object build with this blueprint</li>
+							</ul>
+
+							<aside class="notes">
+								imagen y contenedor son conceptos relaccionados pero no son lo mismo, vamos a intentar explicarlo a traves de ejemplos:
+								<br>
+
+								el primer ejemplo que aparece en todos sitios es comparar <br>
+								- una imagen de docker en terminos de programacion orientada a objetos
+								 como una clase sin metodos estaticos <br>
+								- y un container de docker es como una instancia de esa clase <br>
+								<br>
+								otro ejemplo podria ser: <br>
+								- una imagen de docker es un paquete de repositorio que no esta instalado, en el sistema<br>
+								- y un contenedor de docker es nuestra installacion de ese paquete en nuestro sistema
+								<br>									
+							</aside>
+					</section>
+
+					<section>
+						<section>
+							<div>
+								<div class="left">
+									<h3 class="text-center">blueprint</h3>
+									<img src="resources/blueprint-container.png"" alt="">
+									<h3 class="text-center" style="padding-top:2.3rem;">docker image</h3>
+								</div>
+								<div class="left">
+									<h3 class="text-center">object itself</h3>
+									<img src="resources/dry-bulk-containers-01.jpg" alt="">
+									<h3 style="margin-bottom:2rem" class="text-center">docker container</h3>
+								</div>
+							</div>
+							<aside class="notes">
+								y el ultimo ejemplo <br>
+
+								- una imagen de docker es como un plano de algo que quieres construir <br>
+								- un contenedor es llevar a cabo la construccion de lo que viene en el plano <br>
+								<br>
+								
+							</aside>
+						</section>
+					</section>
+				</section>
+
+
+
+				
+				<section>
+					<h1>docker images</h1>
+					<p>
+						<a href="https://hub.docker.com/search?q=&type=image">https://hub.docker.com/</a>
+					</p>
+					<img class="" src="./resources/docker-images-availables.png" alt="">
+					<p><a href="https://hub.docker.com/_/ruby">images of ruby </a></p>
+					<aside class="notes">
+					Todas las imagenes de docker estan disponibles en sitio web  hub.docker.com que es como el 
+					github de imagenes de docker. por ejemplo ruby tiene muchas imagenes de docker con diferentes etiquetas<br>
+					<br>
+					abrir enlace
+					<br>
+					todas las imagenes de docker tienen su propia etiqueta para saber como se ha construido y que tiene dentro de la imagen
+					</aside>
+				</section>
+				
+				<section>
+					<h2 style="margin-top:-150px;">docker volume</h2>
+					<ul>
+						<li>docker philosophy is disponsable</li>
+						<li>remove container => remove data</li>
+					</ul>
+					<p>docker rm !=  docker stop</p>
+					<img src="resources/docker-shared-volume.jpg" alt="">
+					<p>
+					volume is the solution, A mounted volume acts like a shared directory	 
+					between the container and the host
+					</p>
+					<aside class="notes">
+					En docker todo está pensado desde un enfoque desechable, usar el contenedor y tirar... <br>
+					¿Pero y que pasan con los datos? docker ofrece una solucion para la persistencia de datos <br>
+					esta solucion son los volumenes de docker
+					<br>
+					Quiero aclarar que borrar un contenedor es diferente a detener un contenedor, el ciclo de vida de un contenedor
+					no acaba cuando se detiene, es necesario borrarlo.
+					</aside>
+				</section>
+
+				
+				<section>
+					<h1>Docker CLI <small style="font-family: 'Courier New', Courier, monospace;padding-top:1.2rem;">(image)</small></h1>
+					<pre class="bash"><code data-trim data-noescape>
+					docker image --help
+					# docker [image] <command>
+					docker image ls
+					docker image ls --all
+					docker image pull
+					docker image rm # docker rmi $SHA_IMAGE
+					docker image prune
+					docker image tag
+					docker image inspect
+					docker image build
+
+					docker images
+					docker images --all
+					</code></pre>
+					<a href="https://docs.docker.com/engine/reference/commandline/cli/">see more CLI at</a>
+					<aside class="notes">
+						Esta es la interfaz de comandos disponible para las imagenes de docker desde la terminal 
+						en cualquier maquina con docker instalado. <br>
+						vemos que se pueden: <br>
+						listar <br>
+						descargar <br>
+						borrar <br>
+						etiquetar <br>
+						inspeccionar <br>
+						y la mas importante: construir <br>
+					</aside>
+				</section>
+				
+				<section>
+					<h1>Docker CLI <small style="font-family: 'Courier New', Courier, monospace;padding-top:1.2rem;">(container)</small></h1>
+					<pre class="bash"><code data-trim data-noescape>
+					docker container --help
+					# docker [container] <command>
+					docker container create
+					docker container start
+					docker container run
+					docker container exec
+					docker container logs
+					docker container pause
+					docker container restart
+					docker container rm
+					docker container prune
+					</code></pre>
+					<a href="https://docs.docker.com/engine/reference/commandline/cli/">see more CLI at</a>
+					<aside class="notes">
+							Esta es la interfaz de comandos disponible para los contenedores de docker desde la terminal 
+							en cualquier maquina con docker instalado. <br>
+							vemos que se pueden: <br>
+							crear <br>
+							iniciar <br>
+							parar <br>
+							ejecutar un comando dentro del propio contenedor <br>
+							reiniciar <br>
+							ejecutar <br>
+							borrar <br>
+					</aside>
+				</section>
+
+				<section>
+					<h1>Docker CLI <small style="font-family: 'Courier New', Courier, monospace;padding-top:1.2rem;">(volume)</small></h1>
+					<pre class="bash"><code data-trim data-noescape>
+					docker volume --help
+					# docker volume <command>
+					docker volume create
+					docker volume rm
+					docker volume ls
+					docker volume inspect
+					docker volume prune
+					</code></pre>
+					<a href="https://docs.docker.com/engine/reference/commandline/cli/">see more CLI at</a>
+				
+					<aside class="notes">
+						Esta es la interfaz de comandos disponible para los volumenes de docker desde la terminal 
+						en cualquier maquina con docker instalado. <br>
+						crear <br>
+						borrar <br>
+						listar <br>
+						inspeccionar <br>						
+					</aside>
+				</section>
+
+
+
+				<section>
+					<h1>Dockerfile Sintax</h1>
+					<pre class="dockerfile"><code data-trim data-noescape>
+					FROM ruby:2.3
+
+					RUN apt-get update \
+						&& apt-get install -y --no-install-recommends \
+							postgresql-client \
+						&& rm -rf /var/lib/apt/lists/*
+
+					WORKDIR /usr/src/app
+					COPY Gemfile* ./
+					RUN bundle install
+					COPY . .
+
+					EXPOSE 3000
+					CMD ["rails", "server", "-b", "0.0.0.0"]
+					</code></pre>
+					<a href="https://docs.docker.com/engine/reference/builder/">see more sintax at</a>				
+					<aside class="notes">
+						Este es un ejemplo de un fichero dockerfile con el que se puede construir una imagen de docker <br>
+						vemos que tiene una sintaxis especifica pero que todo son comandos de terminal precedidos de un termino en mayuscula
+					</aside>
+				</section>
+
+
+				<section>
+					<h3>What are docker images made of?</h3>
+					<p>docker images has layers</p>
+					<img src="resources/docker-images-has-layers.png" alt="" height="400px">
+					
+					
+					
+					<p>we do not cover important improvements
+						<ul>
+							<li>Dockerignore</li>
+							<li>Clean best practise (rm -rf /var/lib/apt/list/*)</li>
+							<li>Sorting layers for improve cache</li>
+							<li>Multistage images</li>
+						</ul>
+					</p>
+					<aside class="notes">
+						¿Pero de que estan hechas las imagenes de docker? <br>
+						Las imagenes de docker estan hechas de capas y cada una de esas capas EN GENERAL corresponde con cada una de las sentencias del dockerfile que la creó.
+						por eso muchas veces veremos encadenar comandos en los dockerfiles <br>
+
+						Tambien es importante el orden de ejecucion de instrucciones para que el orden de esas capas sea adecuado
+					</aside>
+				</section>
+
+
+				<section>				
+					<h1>Demo time!!</h1>
+					<img class="" src="./resources/we-pray-to-rhllor.jpg" alt="" height="600px">
+					<p>We pray to lord of the light, For the demo is dark and full of terrors</p>
+					<aside class="notes">
+						he ido super rapido por las anteriores slides porque la idea es mostrar docker en funcionamiento
+					</aside>
+				</section>
+
+				
+
+
+
+
+				<section>
+					<img src="resources/one-doesnt-simply-run-a-unique-container.png" alt="">
+					<h3>One doesn't simply runs one container</h3>
+					<h2></h2>
+					<aside class="notes">
+						Pero uno no simplemente ejecuta un contenedor, como poco tambien necesitas una base de datos.
+						<br><br>
+						Ademas la interfaz de comandos de docker es tediosa de utilizar y si cogiesemos todos esos parametros 
+						y los pusiesemos en un fichero yaml para hacer una composicion de varias imagenes de docker... 
+						<br><br>
+						Pues eso es lo que nos ofrece docker-compose, veamos un ejemplo
+					</aside>
+				</section>
+
+				<section>
+					<img src="resources/docker-compose-logo.png" alt="" height="300px">
+
+					<pre class="yaml"><code data-trim data-noescape>
+						version: '1'
+						services:
+						  db:
+						    image: postgres
+						    volumes:
+						      - ./tmp/db:/var/lib/postgresql/data
+						  web:
+						    build: .
+						    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+						    volumes:
+							  - .:/myapp
+						    ports:
+						      - "3000:3000"
+							depends_on:
+						      - db
+					</code></pre>
+					<pre class="bash"><code data-trim data-noescape>
+					docker-compose build
+					docker-compose run
+					</code></pre>
+
+					
+
+				</section>
+
+
+				<section>
+					<h3>to be continued...</h3>
+					<img src="resources/applause-bender.png" alt="" height="300px">
+					<h2>thanks to </h2>
+					<ul>
+						<li>codespaceacademy</li>
+						<li>malaga.rb</li>
+					</ul>
+					<h6 style="padding-top:60px">Please visit andalucia.onruby.eu</h6>
+					<p>powered by docker and reveal.js </p>
+				</section>
+
+
+
+
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				width: 1280,
+				height: 1024,
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
